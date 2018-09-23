@@ -1,39 +1,63 @@
 /* eslint-env mocha */
 'use strict'
 
-const Railing = require('../src')
+const Bootstrap = require('../src')
 const peerList = require('./default-peers')
 const partialValidPeerList = require('./some-invalid-peers')
-const {expect} = require('chai')
+const chai = require('chai')
+const expect = chai.expect
+chai.use(require('dirty-chai'))
 const mafmt = require('mafmt')
+const PeerInfo = require('peer-info')
 
 describe('bootstrap', () => {
-  it('find the other peer', function (done) {
-    this.timeout(5 * 1000)
-    const r = new Railing({
-      list: peerList,
-      interval: 2000
-    })
+  it('find the other peers', (done) => {
+    const interval = 100
+    const b = new Bootstrap({ list: peerList, interval })
 
-    r.once('peer', (peer) => done())
-    r.start(() => {})
+    b.start((err) => {
+      expect(err).to.not.exist()
+
+      const foundPeers = []
+
+      b.on('peer', (peer) => {
+        expect(PeerInfo.isPeerInfo(peer)).to.be.true()
+        const peerList = peer.multiaddrs.toArray()
+        expect(peerList.length).to.eq(1)
+        expect(mafmt.IPFS.matches(peerList[0].toString()))
+        foundPeers.push(peer)
+      })
+
+      // Inspect foundPeers between first and second interval
+      setTimeout(() => {
+        expect(foundPeers).to.have.length(peerList.length)
+        b.stop(done)
+      }, interval + (interval / 2))
+    })
   })
 
-  it('not fail on malformed peers in peer list', function (done) {
-    this.timeout(5 * 1000)
+  it('not fail on malformed peers in peer list', (done) => {
+    const interval = 100
+    const b = new Bootstrap({ list: partialValidPeerList, interval })
 
-    const r = new Railing({
-      list: partialValidPeerList,
-      interval: 2000
-    })
+    b.start((err) => {
+      expect(err).to.not.exist()
 
-    r.start(() => { })
+      const foundPeers = []
 
-    r.on('peer', (peer) => {
-      const peerList = peer.multiaddrs.toArray()
-      expect(peerList.length).to.eq(1)
-      expect(mafmt.IPFS.matches(peerList[0].toString()))
-      done()
+      b.on('peer', (peer) => {
+        expect(PeerInfo.isPeerInfo(peer)).to.be.true()
+        const peerList = peer.multiaddrs.toArray()
+        expect(peerList.length).to.eq(1)
+        expect(mafmt.IPFS.matches(peerList[0].toString()))
+        foundPeers.push(peer)
+      })
+
+      // Inspect foundPeers between first and second interval
+      setTimeout(() => {
+        expect(foundPeers).to.have.length(1)
+        b.stop(done)
+      }, interval + (interval / 2))
     })
   })
 })

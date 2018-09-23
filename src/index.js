@@ -8,8 +8,8 @@ const EventEmitter = require('events').EventEmitter
 const debug = require('debug')
 const setImmediate = require('async/setImmediate')
 
-const log = debug('libp2p:railing')
-log.error = debug('libp2p:railing:error')
+const log = debug('libp2p:bootstrap')
+log.error = debug('libp2p:bootstrap:error')
 
 function isIPFS (addr) {
   try {
@@ -23,30 +23,34 @@ class Bootstrap extends EventEmitter {
   constructor (options) {
     super()
     this._list = options.list
+    this._peers = null
     this._interval = options.interval || 10000
     this._timer = null
   }
 
   start (callback) {
-    setImmediate(() => callback())
-
     if (this._timer) { return }
 
+    this._peers = this._list.reduce((peers, candidate, cb) => {
+      if (!isIPFS(candidate)) {
+        log.error('Invalid multiaddr ' + candidate)
+        return peers
+      }
+
+      const ma = multiaddr(candidate)
+      const peerId = PeerId.createFromB58String(ma.getPeerId())
+
+      const peerInfo = new PeerInfo(peerId)
+      peerInfo.multiaddrs.add(ma)
+
+      return peers.concat(peerInfo)
+    }, [])
+
     this._timer = setInterval(() => {
-      this._list.forEach((candidate) => {
-        if (!isIPFS(candidate)) { return log.error('Invalid multiaddr') }
-
-        const ma = multiaddr(candidate)
-
-        const peerId = PeerId.createFromB58String(ma.getPeerId())
-
-        PeerInfo.create(peerId, (err, peerInfo) => {
-          if (err) { return log.error('Invalid bootstrap peer id', err) }
-          peerInfo.multiaddrs.add(ma)
-          this.emit('peer', peerInfo)
-        })
-      })
+      this._peers.forEach((peerInfo) => this.emit('peer', peerInfo))
     }, this._interval)
+
+    setImmediate(() => callback())
   }
 
   stop (callback) {
