@@ -4,6 +4,7 @@
   "description": "Node.js IPFS Implementation of the railing process of a Node through a bootstrap peer list",
   "leadMaintainer": "Vasco Santos <vasco.santos@moxy.studio>",
   "main": "src/index.js",
+  "typings": "src/types.d.ts",
   "scripts": {
     "lint": "aegir lint",
     "test": "aegir test",
@@ -14,7 +15,8 @@
     "release-minor": "aegir release --type minor -t node",
     "release-major": "aegir release --type major -t node",
     "coverage": "aegir coverage",
-    "coverage-publish": "aegir coverage publish"
+    "coverage-publish": "aegir coverage publish",
+    "generate-typings": "./node_modules/.bin/jsdoc -c ./.jsdoc.json"
   },
   "keywords": [
     "IPFS"
@@ -29,7 +31,11 @@
   },
   "devDependencies": {
     "aegir": "^20.0.0",
-    "chai": "^4.2.0"
+    "chai": "^4.2.0",
+    "jsdoc": "^3.6.3",
+    "jsdoc-export-default-interop": "^0.3.1",
+    "tsd-jsdoc": "^2.3.1",
+    "typescript-definition-tester": "0.0.6"
   },
   "dependencies": {
     "debug": "^4.1.1",
@@ -59,6 +65,7 @@
     "Zane Starr <zcstarr@gmail.com>",
     "dirkmc <dirkmdev@gmail.com>",
     "victorbjelkholm <victor@protocol.ai>",
-    "ころ <koropicot@gmail.com>"
+    "ころ <koropicot@gmail.com>",
+    "omidiora samuel <samparsky@gmail.com>"
   ]
 }
